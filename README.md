@@ -1,2 +1,2 @@
 # Road-Visualisation
-Python code which uses video input to create a visualisation for the road around the driver
+Python code which uses video input to analyse situations when driving and make descisions.
