@@ -244,10 +244,15 @@ pytorch_lane_dataset = LaneLinesDataset(ndjson_file="SELF DRIVING CAR/DATA/TUSim
                                    root_dir="SELF DRIVING CAR/DATA/TUSimple/train_set/clips",
                                    transform=transform)
 
+pytorch_lane_dataset_test = LaneLinesDataset(ndjson_file="SELF DRIVING CAR/DATA/TUSimple/test_set/edit_test_label.ndjson",
+                                   root_dir="SELF DRIVING CAR/DATA/TUSimple/test_set/clips",
+                                   transform=transform)
 
-#Input an image and with the image comes one array of coordinates where the lines are.
-#Want to process this image into a 2D array and identify the road lines.
-#Then want the coordinates of these road lines, then to check them against the pre-determined ones.
+"""
+Input an image and with the image comes one array of coordinates where the lines are.
+Want to process this image into a 2D array and identify the road lines.
+Then want the coordinates of these road lines, then to check them against the pre-determined ones.
+"""
 
 class CNN(nn.Module):
     def __init__(self):
@@ -256,6 +261,7 @@ class CNN(nn.Module):
         self.pool = nn.MaxPool2d(2, 2) #Pooling layer uses a 2x2 to get max value
         self.conv2 = nn.Conv2d(6, 16, 5) #6 input channels because previously had 6 outputs, 16 output feature maps
         self.conv3 = nn.Conv2d(16, 32, 5) #Added a third conv layer and pooling layer to see if the loss decreased, however didn't affect it. (may need to remove later)
+#Example code actuqally used 4 layers, that is a consideration
 
         self.fc1 = nn.Linear(32 * 24 * 24, 120) #16 outputs *5^2, 120 output features - should be changed
         self.fc2 = nn.Linear(120, 84) #120 input channels, 84 output
@@ -270,84 +276,6 @@ class CNN(nn.Module):
         x = F.relu(self.fc2(x))
         x = self.fc3(x)
         return x
-"""
-The next two functions are AI generated and will be removed in the final version, time restrictions and I wanted to attempt to
-see the results of the CNN, however this was not possible, but highlighted the important error in need of fixing
-"""
-def visualize_processed_image(processed_img):
-    # Convert processed image from float32 to uint8 for visualization
-    processed_img = (processed_img * 255).astype(np.uint8)
-
-    # Convert grayscale image to RGB for visualization with matplotlib
-    processed_img_rgb = cv2.cvtColor(processed_img, cv2.COLOR_GRAY2RGB)
-
-    plt.figure(figsize=(8, 8))
-    plt.imshow(processed_img_rgb, cmap='gray')
-    plt.title('Processed Image')
-    plt.axis('off')
-    plt.show()
-
-"""with open("SELF DRIVING CAR/DATA/TUSimple/train_set/train_label_data.ndjson", 'r') as file:
-            df = [json.loads(line) for line in file] 
-processed_img = process_image(df, 1)
-visualize_processed_image(processed_img)"""
-
-def visualize_predictions(model, dataloader, device, num_samples=5):
-    model.eval()
-    samples = 0
-    with torch.no_grad():
-        for data in dataloader:
-            inputs, labels = data
-            inputs, labels = inputs.to(device), labels.to(device)
-            outputs = model(inputs)
-
-            for i in range(inputs.size(0)):
-                if samples >= num_samples:
-                    return
-
-                # Convert tensor image to numpy array
-                img = inputs[i].cpu().numpy().transpose((1, 2, 0))  # Convert to HWC format
-                img = img * 255  # Denormalize (since it was normalized by dividing by 255)
-                img = img.astype(np.uint8)
-
-                print(f"Image shape: {img.shape}, min: {img.min()}, max: {img.max()}")  # Debugging print
-
-                # Ensure image is in correct range
-                img = np.clip(img, 0, 255)
-
-                # Handle grayscale images
-                if img.shape[2] == 1:  # If image is grayscale
-                    img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-
-                # Ensure coordinates are within image bounds
-                img_height, img_width = img.shape[:2]
-                pred_coords = outputs[i].cpu().numpy().reshape(-1, 2)
-                true_coords = labels[i].cpu().numpy().reshape(-1, 2)
-
-                pred_coords = np.clip(pred_coords, 0, [img_width, img_height])
-                true_coords = np.clip(true_coords, 0, [img_width, img_height])
-
-                # Draw the predicted coordinates in red
-                for coord in pred_coords:
-                    cv2.circle(img, (int(coord[0]), int(coord[1])), 3, (0, 0, 255), -1)
-
-                # Draw the true coordinates in green
-                for coord in true_coords:
-                    if coord[0] != -2:  # Assuming -2 is an invalid value and should not be plotted
-                        cv2.circle(img, (int(coord[0]), int(coord[1])), 3, (0, 255, 0), -1)
-
-                # Convert BGR to RGB for displaying with matplotlib
-                img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
-                plt.figure()
-                plt.imshow(img_rgb)
-                plt.title("Red: Predicted, Green: True")
-                plt.axis('off')
-                plt.show()
-
-                samples += 1
-
-
 
 
 if __name__ == "__main__":
@@ -360,6 +288,7 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(pytorch_lane_dataset, batch_size=64, shuffle=True, num_workers=2)
     val_loader = DataLoader(pytorch_lane_dataset, batch_size=64, shuffle=True, num_workers=2)
+    test_loader = DataLoader(pytorch_lane_dataset_test, batch_size = 64, shuffle=True, num_workers=2)
 
     train_losses = []
     val_losses = []
@@ -411,7 +340,28 @@ if __name__ == "__main__":
     plt.legend()
     plt.show()
 
-    visualize_predictions(model = cnn, dataloader = train_loader, device = device, num_samples=1)
+
+    #Do some predictions on test data 
+    for i, data in enumerate(test_loader, 0):
+            inputs, labels = data
+            inputs, labels = inputs.to(device), labels.to(device)
+
+            optimizer.zero_grad()
+
+            predictions = cnn(inputs)
+            loss = criterion(predictions, labels)
+            loss.backward()
+            optimizer.step()
+
+    plt.imshow(predictions[i])
+    plt.show()
+    print(predictions[i])
+
+            
+
+
+
+
 
 """
 Massive loss at the moment (17,000), not sure what is causing it possibly:
