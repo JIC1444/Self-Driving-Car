@@ -20,4 +20,6 @@ The first peice of the puzzle, allowing the car to follow a path. My approach wa
 
 # Automatic Parellel Parking (23/06/24)
 After the neural network in the lane lines part of the project, I wanted a break from the deep learning side and to try a completely new domain to me: pygame and visualisations. By having a direct birds eye view of the car, it allows for a great visual of the road around the car and to see its parking abilities in action. 
-I have started with a simple simulation of a road, with a simple algorithm for only parallel parking. This is something I'd like to change, possibly for reinforcement learning, and ultimately let sensor and video input aid the computer to park the car.
+I have started with a simple simulation of a road, with a simple algorithm for only parallel parking. This is something I'd like to change, possibly for reinforcement learning, and ultimately let sensor and video input aid the computer to park the car. 
+
+This section also required the use of some code from my repository: Python-Projects and was one of my first projects, so it was in desparate need of some revamping.
